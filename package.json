@@ -1,0 +1,25 @@
+{
+  "name": "mpd-server",
+  "version": "1.0.0",
+  "description": "Node js mpd server.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/depuits/mpd-server.git"
+  },
+  "keywords": [
+    "mpd"
+  ],
+  "author": "depuits",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/depuits/mpd-server/issues"
+  },
+  "homepage": "https://github.com/depuits/mpd-server#readme",
+  "dependencies": {
+    "mpd": "^1.3.0"
+  }
+}
