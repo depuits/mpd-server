@@ -1,6 +1,11 @@
 const mpd = require('../');
 
-const server = mpd();
+function handleCommand(cmd, params) {
+	//console.log('command received: ' + cmd);
+	return true;
+}
+
+const server = mpd(handleCommand);
 server.on('connection', s => {
 	console.log('client connected');
 	s.on('end', () => { console.log('client disconnected'); });

@@ -20,3 +20,9 @@ client.on('system-player', function() {
 		console.log(msg);
 	});
 });
+
+setTimeout(() => {
+	client.sendCommand(cmd("play", []), function(err, msg) {
+		console.log("send play");
+	});
+}, 5000);
