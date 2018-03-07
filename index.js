@@ -11,36 +11,40 @@ const defaultServerOpts = {
 module.exports = function (cmdHandler) {
 	const mpd = Object.create(new EventEmitter());
 
-	function executeCommandBuffer(buffer, singleCommandCallback) {
+	function executeCommandBuffer(socket, buffer, listOk) {
+		//TODO implement the idle and no idle here
+
 		// execute all commands in the command buffer
-		for (let i = 0; i < buffer.length; ++i) {
-			//TODO split command and parameters
-			let command = buffer[i];
+		return buffer.reduce((p, command, i) => p.then(() => {
 			let args = command.match(/(?:[^\s"]+|"([^"]*)")+/);
 
-			if (cmdHandler('TODO add command details')) {
-				if (typeof singleCommandCallback === 'function') {
-					singleCommandCallback();
+			return cmdHandler(args[0], args.slice(1)).then((resp) => {
+				socket.write(resp);
+				if (listOk) {
+					socket.write('list_OK\n');
 				}
-			} else {
+			}).catch((err) => {
 				// the command has failed
 				// return the command status according to the response syntax
 				// https://www.musicpd.org/doc/protocol/response_syntax.html
 				// https://github.com/MusicPlayerDaemon/MPD/blob/master/src/protocol/Ack.hxx
 				// as error code we'll allways use ACK_ERROR_UNKNOWN (5)
 				let errorCode = 5;
-				return `ACK [${errorCode}@${i}] {${command}} some (hopefully) informative text that describes the nature of the error.`;
-			}
-		}
-
-		return 'OK';
+				let resp = `ACK [${errorCode}@${i}] {${command}} ${err}\n`;
+				throw resp
+			});
+		}), Promise.resolve()).then(() => {
+			socket.write('OK\n');
+		}).catch((err) => {
+			socket.write(err);
+		});
 	}
 
 	mpd.server = net.createServer((socket) => {
 		// client buffer values
 		let msgBuffer = '';
 		let cmdBuffer = undefined;
-		let listOkFn = undefined;
+		let listOk = false;
 		let execute = false;
 
 		socket.write(MPD_OK);
@@ -59,9 +63,7 @@ module.exports = function (cmdHandler) {
 
 				switch (msg) {
 					case 'command_list_ok_begin':
-						listOkFn = () => {
-							 socket.write('list_OK');
-						};
+						listOk = true;
 					case 'command_list_begin':
 						cmdBuffer = [];
 						break;
@@ -79,10 +81,9 @@ module.exports = function (cmdHandler) {
 				}
 
 				if (execute) {
-					let resp = executeCommandBuffer(cmdBuffer, listOkFn);
-					socket.write(resp + '\n');
+					executeCommandBuffer(socket, cmdBuffer, listOk);
 					cmdBuffer = undefined;
-					listOkFn = undefined;
+					listOk = false;
 					execute = false;
 				}
 

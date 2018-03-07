@@ -25,4 +25,4 @@ setTimeout(() => {
 	client.sendCommand(cmd("play", []), function(err, msg) {
 		console.log("send play");
 	});
-}, 5000);
+}, 3000);
