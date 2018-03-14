@@ -7,6 +7,8 @@ module.exports = function (socket, cmdHandler) {
 	const con = Object.create(new EventEmitter());
 	con.socket = socket;
 
+	con.updates = [];
+
 	// client buffer values
 	let cmdChain = Promise.resolve();
 	let msgBuffer = '';
@@ -15,38 +17,59 @@ module.exports = function (socket, cmdHandler) {
 	let listOk = false;
 	let idle = false;
 
+	function printUpdates() {
+		// combine all updates in a single response
+		let print = con.updates.reduce((resp, system) => resp + system + '\n', '');
+		// clear the current update list
+		con.updates = [];
+		return print;
+	}
+
 	function executeCommand(cmd, params) {
-		switch (cmd) {
-		case 'idle':
-			//go into idle
-			idle = true;
-			return; // wait for event and then write it
-		case 'noidle':
-			idle = false;
-			return Promise.resolve('print changed subsystems'); //TODO write change systems
-		}
+		if (cmd === 'idle') {
+			con.emit('idle');
 
-		// while idle we can't execute any other commands
-		if (idle) {
-			return Promise.reject('Can\'t execute commands while in idle.');
-		}
+			if (con.updates.length > 0) {
+				// there are updates waiting so we directly reply
+				con.emit('noidle');
+				return Promise.resolve(printUpdates());
+			} else {
+				// there are no updates yet so
+				// we'll go into idle
+				idle = true;
+				return new Promise((resolve, reject) => {
+					// wait for event and then write change
+					con.once('system', (system) => {
+						con.emit('noidle');
+						resolve(printUpdates());
+					});
 
-		return cmdHandler(cmd, params).then((resp) => {
-			socket.write(resp);
-			if (listOk) {
-				socket.write('list_OK\n');
+					// or just wait for the noidle
+					con.once('noidle', () => {
+						resolve(printUpdates());
+					});
+				});
 			}
-		});
+		}
+
+		return cmdHandler(cmd, params);
 	}
 
 	// we still pass the buffer and list ok to capture the values
 	function executeCommandBuffer(buffer, listOk) {
 		//TODO implement the idle and no idle here
 
-		// execute all commands in the command buffer
+		// execute all commands in the command buffer in the order and waiting for their response
 		return buffer.reduce((p, command, i) => p.then(() => {
 			let args = command.match(/(?:[^\s"]+|"([^"]*)")+/);
-			return executeCommand(args[0], args.slice(1)).catch((err) => {
+			return executeCommand(args[0], args.slice(1)).then((resp) => {
+				// write the command response
+				socket.write(resp);
+				// and list ok if requested
+				if (listOk) {
+					socket.write('list_OK\n');
+				}
+			}).catch((err) => {
 				// the command has failed
 				// return the command status according to the response syntax
 				// https://www.musicpd.org/doc/protocol/response_syntax.html
@@ -57,8 +80,10 @@ module.exports = function (socket, cmdHandler) {
 				throw resp
 			});
 		}), Promise.resolve()).then(() => {
+			// when the complete buffer is executed then write the ok confirmation
 			socket.write('OK\n');
 		}).catch((err) => {
+			// if anything failed then write the error
 			socket.write(err);
 		});
 	}
@@ -97,8 +122,13 @@ module.exports = function (socket, cmdHandler) {
 			}
 
 			if (execute) {
-				//chain the commands after any other commands still in execution
-				cmdChain = cmdChain.then(() => { return executeCommandBuffer(cmdBuffer, listOk); });
+				if (cmdBuffer[0] === 'noidle') {
+					//if the command buffer is 'noidle' then cancel the idling
+					con.emit('noidle');
+				} else {
+					//otherwise chain the commands after any other commands still in execution
+					cmdChain = cmdChain.then(() => { return executeCommandBuffer(cmdBuffer, listOk); });
+				}
 				cmdBuffer = undefined;
 				listOk = false;
 				execute = false;
@@ -111,6 +141,11 @@ module.exports = function (socket, cmdHandler) {
 	socket.on('error', err => {
 		con.emit('error', err, con);
 	});
+
+	con.systemUpdate = function(subSystem) {
+		con.updates.push(subSystem);
+		con.emit('system', subSystem);
+	};
 
 	return con;
 };
