@@ -2,16 +2,7 @@ const mpd = require('../');
 
 function handleCommand(cmd, params) {
 	console.log('command received: ' + cmd);
-	switch(cmd) {
-		case 'idle':
-			return new Promise(function(resolve, reject) {
-				// wait for change in player
-				setTimeout(resolve, 7000, 'changed: ' + 'subsystem\n');
-			});
-		default:
-			return Promise.resolve('');
-
-	}
+	return Promise.resolve('');
 }
 
 const server = mpd(handleCommand);

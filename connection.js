@@ -57,8 +57,6 @@ module.exports = function (socket, cmdHandler) {
 
 	// we still pass the buffer and list ok to capture the values
 	function executeCommandBuffer(buffer, listOk) {
-		//TODO implement the idle and no idle here
-
 		// execute all commands in the command buffer in the order and waiting for their response
 		return buffer.reduce((p, command, i) => p.then(() => {
 			let args = command.match(/(?:[^\s"]+|"([^"]*)")+/);
@@ -127,7 +125,9 @@ module.exports = function (socket, cmdHandler) {
 					con.emit('noidle');
 				} else {
 					//otherwise chain the commands after any other commands still in execution
-					cmdChain = cmdChain.then(() => { return executeCommandBuffer(cmdBuffer, listOk); });
+					let buffer = cmdBuffer;
+					let lsOk = cmdBuffer;
+					cmdChain = cmdChain.then(() => { return executeCommandBuffer(buffer, lsOk); });
 				}
 				cmdBuffer = undefined;
 				listOk = false;

@@ -28,6 +28,7 @@ module.exports = function (cmdHandler) {
 
 		con.on('error', err => {
 			mpd.emit('error', err, con);
+			mpd.emit('disconnect', con);
 		});
 	}).on('error', (err) => {
 		mpd.emit('error', err);
