@@ -1,3 +1,5 @@
+'use strict';
+
 const EventEmitter = require('events').EventEmitter;
 
 const MPD_OK = 'OK MPD 0.20.18\n';
@@ -27,6 +29,7 @@ module.exports = function (socket, cmdHandler) {
 
 	function executeCommand(cmd, params) {
 		if (cmd === 'idle') {
+			//TODO handle idle arguments			
 			con.emit('idle');
 
 			if (con.updates.length > 0) {
@@ -59,7 +62,7 @@ module.exports = function (socket, cmdHandler) {
 	function executeCommandBuffer(buffer, listOk) {
 		// execute all commands in the command buffer in the order and waiting for their response
 		return buffer.reduce((p, command, i) => p.then(() => {
-			let args = command.match(/(?:[^\s"]+|"([^"]*)")+/);
+			let args = command.match(/\w+|"(?:\\"|[^"])+/g);
 			return executeCommand(args[0], args.slice(1)).then((resp) => {
 				// write the command response
 				socket.write(resp);
