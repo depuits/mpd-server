@@ -1,6 +1,6 @@
 const EventEmitter = require('events').EventEmitter;
 
-const MPD_OK = 'OK MPD 0.20.18';
+const MPD_OK = 'OK MPD 0.20.18\n';
 const MPD_SENTINEL = /^.+$/m;
 
 module.exports = function (socket, cmdHandler) {
