@@ -129,7 +129,7 @@ module.exports = function (socket, cmdHandler) {
 				} else {
 					//otherwise chain the commands after any other commands still in execution
 					let buffer = cmdBuffer;
-					let lsOk = cmdBuffer;
+					let lsOk = listOk;
 					cmdChain = cmdChain.then(() => { return executeCommandBuffer(buffer, lsOk); });
 				}
 				cmdBuffer = undefined;
