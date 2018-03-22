@@ -21,7 +21,7 @@ module.exports = function (socket, cmdHandler) {
 
 	function printUpdates() {
 		// combine all updates in a single response
-		let print = con.updates.reduce((resp, system) => resp + system + '\n', '');
+		let print = con.updates.reduce((resp, system) => resp + `changed: ${system}\n`, '');
 		// clear the current update list
 		con.updates = [];
 		return print;
