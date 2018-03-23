@@ -59,7 +59,7 @@ module.exports = function (socket, cmdHandler) {
 			}
 		}
 
-		return cmdHandler(cmd, params);
+		return cmdHandler(cmd, params, con);
 	}
 
 	// we still pass the buffer and list ok to capture the values
