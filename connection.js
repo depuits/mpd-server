@@ -41,18 +41,20 @@ module.exports = function (socket, cmdHandler) {
 				// we'll go into idle
 				idle = true;
 				return new Promise((resolve, reject) => {
-					// wait for event and then write change
-					con.once('system', (system) => {
-						con.off('noidle');
+					let systemListener = (system) => {
+						con.removeListener('noidle', noIdleListener);
 						con.emit('noidle');
 						resolve(printUpdates());
-					});
-
-					// or just wait for the noidle
-					con.once('noidle', () => {
-						con.off('system');
+					};
+					let noIdleListener = () => {
+						con.removeListener('system', systemListener);
 						resolve(printUpdates());
-					});
+					};
+
+					// wait for event and then write change
+					con.once('system', systemListener);
+					// or just wait for the noidle
+					con.once('noidle', noIdleListener);
 				});
 			}
 		}
@@ -84,7 +86,9 @@ module.exports = function (socket, cmdHandler) {
 			});
 		}), Promise.resolve()).then(() => {
 			// when the complete buffer is executed then write the ok confirmation
-			socket.write('OK\n');
+			if (!listOk) {
+				socket.write('OK\n');
+			}
 		}).catch((err) => {
 			// if anything failed then write the error
 			socket.write(err);
