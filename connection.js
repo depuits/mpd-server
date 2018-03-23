@@ -43,12 +43,14 @@ module.exports = function (socket, cmdHandler) {
 				return new Promise((resolve, reject) => {
 					// wait for event and then write change
 					con.once('system', (system) => {
+						con.off('noidle');
 						con.emit('noidle');
 						resolve(printUpdates());
 					});
 
 					// or just wait for the noidle
 					con.once('noidle', () => {
+						con.off('system');
 						resolve(printUpdates());
 					});
 				});
