@@ -59,7 +59,7 @@ Notify a subsystem update.
 
 ##### Objects
 - server: [net.Server](https://nodejs.org/api/net.html#net_class_net_server)
-- connections: [Connection](https://github.com/depuits/mpd-server#Connection)[]
+- connections: [Connection](https://github.com/depuits/mpd-server#connection)[]
 
 #### Connection
 
