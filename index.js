@@ -17,7 +17,7 @@ module.exports = function (cmdHandler) {
 	mpd.server = net.createServer((socket) => {
 		let con = connection(socket, cmdHandler);
 		mpd.connections.push(con);
-		mpd.emit('connection', con);
+		mpd.emit('connect', con);
 
 		con.on('close', () => {
 			mpd.emit('disconnect', con);

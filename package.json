@@ -1,7 +1,7 @@
 {
   "name": "mpd-server",
   "version": "1.0.0",
-  "description": "Node js mpd server.",
+  "description": "Node js mpd server skeleton.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,7 +11,8 @@
     "url": "git+https://github.com/depuits/mpd-server.git"
   },
   "keywords": [
-    "mpd"
+    "mpd",
+    "server"
   ],
   "author": "depuits",
   "license": "ISC",

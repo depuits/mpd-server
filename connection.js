@@ -30,11 +30,11 @@ module.exports = function (socket, cmdHandler) {
 	function executeCommand(cmd, params) {
 		if (cmd === 'idle') {
 			//TODO handle idle arguments			
-			con.emit('idle');
+			con.emit('idle', con);
 
 			if (con.updates.length > 0) {
 				// there are updates waiting so we directly reply
-				con.emit('noidle');
+				con.emit('noidle', con);
 				return Promise.resolve(printUpdates());
 			} else {
 				// there are no updates yet so
@@ -43,7 +43,7 @@ module.exports = function (socket, cmdHandler) {
 				return new Promise((resolve, reject) => {
 					let systemListener = (system) => {
 						con.removeListener('noidle', noIdleListener);
-						con.emit('noidle');
+						con.emit('noidle', con);
 						resolve(printUpdates());
 					};
 					let noIdleListener = () => {
@@ -96,7 +96,7 @@ module.exports = function (socket, cmdHandler) {
 	}
 
 	socket.write(MPD_OK);
-	con.emit('connection', con);
+	con.emit('connect', con);
 
 	socket.on('close', () => {
 		con.emit('disconnect', con);
@@ -131,7 +131,7 @@ module.exports = function (socket, cmdHandler) {
 			if (execute) {
 				if (cmdBuffer[0] === 'noidle') {
 					//if the command buffer is 'noidle' then cancel the idling
-					con.emit('noidle');
+					con.emit('noidle', con);
 				} else {
 					//otherwise chain the commands after any other commands still in execution
 					let buffer = cmdBuffer;
@@ -153,7 +153,7 @@ module.exports = function (socket, cmdHandler) {
 
 	con.systemUpdate = function(subSystem) {
 		con.updates.push(subSystem);
-		con.emit('system', subSystem);
+		con.emit('system', subSystem, con);
 	};
 
 	return con;
