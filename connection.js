@@ -66,7 +66,14 @@ module.exports = function (socket, cmdHandler) {
 	function executeCommandBuffer(buffer, listOk) {
 		// execute all commands in the command buffer in the order and waiting for their response
 		return buffer.reduce((p, command, i) => p.then(() => {
-			let args = command.match(/\w+|"(?:\\"|[^"])+/g);
+			let reg = /"([^"]*)"|[^\s]+/g;
+			let args = [];
+			let match;
+
+			while (match = reg.exec(command)) {
+				args.push(match[1] || match[0]);
+			}
+
 			return executeCommand(args[0], args.slice(1)).then((resp) => {
 				// write the command response
 				socket.write(resp);
