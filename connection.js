@@ -93,13 +93,9 @@ module.exports = function (socket, cmdHandler) {
 				let errorCode = err.code || 5;
 				let errorMsg = err.msg || err;
 				let resp = `ACK [${errorCode}@${i}] {${command}} ${errorMsg}\n`;
-				console.log(resp);
 				socket.write(resp);
 
-				socket.on('error', err => {
-					con.emit('error', err, con);
-				});
-
+				con.emit('commanderror', err, con, resp);
 				return; // stop proccesing other commands from list
 			}
 		}

@@ -44,6 +44,11 @@ server.systemUpdate('subsystem');
 #### Server
 
 ##### Methods
+
+- **constructor** *(cmdHandler)*
+
+Constructor of hte mpd server. The command handler function is responsible to handle all [commands](https://www.musicpd.org/doc/html/protocol.html#command-reference) send by the clients. The only exception here is the `idle`. This command is handled internally. This function must return a promise which resolves to the response for the client.
+
 - **listen** *(options)*
 
 Start listening for clients. The options are passed to the [server listen](https://nodejs.org/api/net.html#net_server_listen_options_callback).
@@ -68,13 +73,20 @@ Notify a subsystem update.
 - **disconnect** *(connection)*
 - **idle** *(connection)*
 
-Emitted when the connection is going in to idle mode as describe [here](https://www.musicpd.org/doc/protocol/command_reference.html).
+Emitted when the connection is going in to idle mode as describe [here](https://www.musicpd.org/doc/html/protocol.html#querying-mpd-s-status).
 
 - **noidle** *(connection)*
 
 Emitted when the connection exits the idle mode.
 
 - **error** *(error, connection)*
+
+Emitted on socket error event. 
+
+- **commanderror** *(error, connection, errorAck)*
+
+Emitted when a command handler failed. The third parameter is the error  response as described in the [protocol](https://www.musicpd.org/doc/html/protocol.html#failure-responses).
+
 - **system** *(subsystem, connection)*
 
 Emitted when a subsytem update is send.
