@@ -1,6 +1,6 @@
 {
   "name": "mpd-server",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Node js mpd server skeleton.",
   "main": "index.js",
   "scripts": {

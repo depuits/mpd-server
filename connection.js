@@ -29,7 +29,7 @@ module.exports = function (socket, cmdHandler) {
 
 	function executeCommand(cmd, params) {
 		if (cmd === 'idle') {
-			//TODO handle idle arguments			
+			//TODO handle idle arguments
 			con.emit('idle', con);
 
 			if (con.updates.length > 0) {
@@ -43,10 +43,12 @@ module.exports = function (socket, cmdHandler) {
 				return new Promise((resolve, reject) => {
 					let systemListener = (system) => {
 						con.removeListener('noidle', noIdleListener);
+						con.removeListener('system', systemListener);
 						con.emit('noidle', con);
 						resolve(printUpdates());
 					};
 					let noIdleListener = () => {
+						con.removeListener('noidle', noIdleListener);
 						con.removeListener('system', systemListener);
 						resolve(printUpdates());
 					};
@@ -63,43 +65,48 @@ module.exports = function (socket, cmdHandler) {
 	}
 
 	// we still pass the buffer and list ok to capture the values
-	function executeCommandBuffer(buffer, listOk) {
+	async function executeCommandBuffer(buffer, listOk) {
 		// execute all commands in the command buffer in the order and waiting for their response
-		return buffer.reduce((p, command, i) => p.then(() => {
-			let reg = /"([^"]*)"|[^\s]+/g;
-			let args = [];
-			let match;
+		for (let [i, command] of buffer.entries()) {
+			try {
+					let reg = /"([^"]*)"|[^\s]+/g;
+					let args = [];
+					let match;
 
-			while (match = reg.exec(command)) {
-				args.push(match[1] || match[0]);
-			}
+					while (match = reg.exec(command)) {
+						args.push(match[1] || match[0]);
+					}
 
-			return executeCommand(args[0], args.slice(1)).then((resp) => {
-				// write the command response
-				socket.write(resp);
-				// and list ok if requested
-				if (listOk) {
-					socket.write('list_OK\n');
-				}
-			}).catch((err) => {
+					let resp = await executeCommand(args[0], args.slice(1))
+					// write the command response
+					socket.write(resp);
+					// and list ok if requested
+					if (listOk) {
+						socket.write('list_OK\n');
+					}
+			} catch (err) {
 				// the command has failed
 				// return the command status according to the response syntax
 				// https://www.musicpd.org/doc/protocol/response_syntax.html
 				// https://github.com/MusicPlayerDaemon/MPD/blob/master/src/protocol/Ack.hxx
 				// as error code we'll allways use ACK_ERROR_UNKNOWN (5)
-				let errorCode = 5;
-				let resp = `ACK [${errorCode}@${i}] {${command}} ${err}\n`;
-				throw resp
-			});
-		}), Promise.resolve()).then(() => {
-			// when the complete buffer is executed then write the ok confirmation
-			if (!listOk) {
-				socket.write('OK\n');
+				let errorCode = err.code || 5;
+				let errorMsg = err.msg || err;
+				let resp = `ACK [${errorCode}@${i}] {${command}} ${errorMsg}\n`;
+				console.log(resp);
+				socket.write(resp);
+
+				socket.on('error', err => {
+					con.emit('error', err, con);
+				});
+
+				return; // stop proccesing other commands from list
 			}
-		}).catch((err) => {
-			// if anything failed then write the error
-			socket.write(err);
-		});
+		}
+
+		if (!listOk) {
+			socket.write('OK\n');
+		}
 	}
 
 	socket.write(MPD_OK);
@@ -114,7 +121,6 @@ module.exports = function (socket, cmdHandler) {
 		let match;
 		while (match = msgBuffer.match(MPD_SENTINEL)) {
 			let msg = match[0];
-			let resp = undefined;
 
 			switch (msg) {
 			case 'command_list_ok_begin':
